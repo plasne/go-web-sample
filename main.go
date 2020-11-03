@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -44,23 +45,70 @@ func getAboutMe(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getAboutMickey(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+
+		// create client
+		client := &http.Client{}
+
+		// create request
+		req, err := http.NewRequest("GET", "http://mickey/me", nil)
+		if err != nil {
+			http.Error(w, "internal server error on create request", http.StatusInternalServerError)
+			log.Printf("CREATE ERROR: %v\n", err)
+			return
+		}
+
+		// fetch the request
+		resp, err := client.Do(req)
+		if err != nil {
+			http.Error(w, "internal server error on GET mickey", http.StatusInternalServerError)
+			log.Printf("GET ERROR: %v\n", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		// read the response
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "internal server error on read response", http.StatusInternalServerError)
+			log.Printf("RESPONSE ERROR: %v\n", err)
+			return
+		}
+
+		// write response
+		w.Header().Add("Content-Type", "application/json")
+		_, err = w.Write(body)
+		if err != nil {
+			http.Error(w, "internal server error on write response", http.StatusInternalServerError)
+			log.Printf("WRITE ERROR: %v\n", err)
+			return
+		}
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
 func main() {
 
 	// add facts
-	name := "Mickey Mouse"
+	name := "Peter Lasne"
 	list = append(list, AboutMe{
 		FullName: name,
-		Fact:     "I am a mouse.",
+		Fact:     "I have a 3-year old.",
 	})
 	list = append(list, AboutMe{
 		FullName: name,
-		Fact:     "I am 92 years old.",
+		Fact:     "I am an avid table-top gamer.",
 	})
 
 	// start listening for requests
 	log.Printf("starting server on port %v...\n", PORT)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/me", getAboutMe)
+	mux.HandleFunc("/mickey", getAboutMickey)
 	err := http.ListenAndServe(":"+strconv.Itoa(PORT), mux)
 	if err != nil {
 		panic(err)
