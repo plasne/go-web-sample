@@ -47,14 +47,14 @@ func getAboutMe(w http.ResponseWriter, r *http.Request) {
 func main() {
 
 	// add facts
-	name := "Peter Lasne"
+	name := "Mickey Mouse"
 	list = append(list, AboutMe{
 		FullName: name,
-		Fact:     "I love table-top gaming.",
+		Fact:     "I am a mouse.",
 	})
 	list = append(list, AboutMe{
 		FullName: name,
-		Fact:     "I have a 3-year old son.",
+		Fact:     "I am 92 years old.",
 	})
 
 	// start listening for requests
