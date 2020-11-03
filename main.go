@@ -18,6 +18,25 @@ type AboutMe struct {
 
 var list []AboutMe
 
+func getVersion(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+
+		// write response
+		w.Header().Add("Content-Type", "test/plain")
+		str := []byte("1.0.0")
+		_, err := w.Write(str)
+		if err != nil {
+			http.Error(w, "internal server error on write response", http.StatusInternalServerError)
+			log.Printf("WRITE ERROR: %v\n", err)
+			return
+		}
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
 func getAboutMe(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -45,7 +64,7 @@ func getAboutMe(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getAboutMickey(w http.ResponseWriter, r *http.Request) {
+func getAboutOther(w http.ResponseWriter, r *http.Request, other string, header string) {
 	switch r.Method {
 	case http.MethodGet:
 
@@ -53,11 +72,16 @@ func getAboutMickey(w http.ResponseWriter, r *http.Request) {
 		client := &http.Client{}
 
 		// create request
-		req, err := http.NewRequest("GET", "http://mickey/me", nil)
+		req, err := http.NewRequest("GET", "http://"+other+"/me", nil)
 		if err != nil {
 			http.Error(w, "internal server error on create request", http.StatusInternalServerError)
 			log.Printf("CREATE ERROR: %v\n", err)
 			return
+		}
+
+		// add the routing header
+		if len(header) > 0 {
+			req.Header.Add("kubernetes-route-as", header)
 		}
 
 		// fetch the request
@@ -91,6 +115,14 @@ func getAboutMickey(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getAboutMickey(w http.ResponseWriter, r *http.Request) {
+	getAboutOther(w, r, "mickey", "")
+}
+
+func getAboutLila(w http.ResponseWriter, r *http.Request) {
+	getAboutOther(w, r, "lila", "evmolyva-e52d")
+}
+
 func main() {
 
 	// add facts
@@ -109,6 +141,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/me", getAboutMe)
 	mux.HandleFunc("/mickey", getAboutMickey)
+	mux.HandleFunc("/lila", getAboutLila)
+	mux.HandleFunc("/version", getVersion)
 	err := http.ListenAndServe(":"+strconv.Itoa(PORT), mux)
 	if err != nil {
 		panic(err)
